@@ -11,6 +11,9 @@ dist/
 build/
 *.js.map
 
+# Uploads
+uploads/
+
 # Environment variables
 .env
 .env.local
