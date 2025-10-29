@@ -1,0 +1,418 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== User Management ====================
+
+model User {
+  id           String    @id @default(uuid()) @db.Uuid
+  email        String    @unique
+  name         String
+  passwordHash String
+  avatarUrl    String?
+  
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  // Relations
+  householdsOwned    Household[]
+  householdMembers   HouseholdMember[]
+  transactionsCreated Transaction[]
+  auditLogs          AuditLog[]
+
+  @@map("users")
+}
+
+model Household {
+  id           String    @id @default(uuid()) @db.Uuid
+  name         String
+  baseCurrency String    // ISO 4217 code like "USD", "LBP"
+  ownerId      String    @db.Uuid
+  
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  // Relations
+  owner            User               @relation(fields: [ownerId], references: [id])
+  members          HouseholdMember[]
+  invitations      Invitation[]
+  accounts         Account[]
+  categories       Category[]
+  transactions     Transaction[]
+  budgets          Budget[]
+  recurringRules   RecurringRule[]
+  goals            Goal[]
+  plannedPayments  PlannedPayment[]
+  insights         Insight[]
+  auditLogs        AuditLog[]
+
+  @@map("households")
+}
+
+enum MemberRole {
+  OWNER
+  ADMIN
+  ADULT
+  CHILD
+}
+
+model HouseholdMember {
+  id          String      @id @default(uuid()) @db.Uuid
+  userId      String      @db.Uuid
+  householdId String      @db.Uuid
+  role        MemberRole  @default(ADULT)
+  
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  deletedAt   DateTime?
+
+  // Relations
+  user      User       @relation(fields: [userId], references: [id])
+  household Household  @relation(fields: [householdId], references: [id])
+
+  @@unique([userId, householdId])
+  @@map("household_members")
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+model Invitation {
+  id          String           @id @default(uuid()) @db.Uuid
+  householdId String           @db.Uuid
+  email       String
+  role        MemberRole       @default(ADULT)
+  token       String           @unique @default(uuid())
+  status      InvitationStatus @default(PENDING)
+  expiresAt   DateTime
+  
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  // Relations
+  household Household @relation(fields: [householdId], references: [id])
+
+  @@map("invitations")
+}
+
+// ==================== Financial Accounts ====================
+
+enum AccountType {
+  CASH
+  BANK
+  CARD
+  MOBILE_WALLET
+  OTHER
+}
+
+model Account {
+  id             String      @id @default(uuid()) @db.Uuid
+  householdId    String      @db.Uuid
+  name           String
+  type           AccountType @default(BANK)
+  currency       String      // ISO 4217
+  balanceDecimal Decimal     @default(0) @db.Decimal(19, 4)
+  
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  deletedAt      DateTime?
+
+  // Relations
+  household       Household        @relation(fields: [householdId], references: [id])
+  transactions    Transaction[]
+  plannedPayments PlannedPayment[]
+
+  @@map("accounts")
+}
+
+// ==================== Categories ====================
+
+enum CategoryType {
+  EXPENSE
+  INCOME
+  TRANSFER
+}
+
+model Category {
+  id          String       @id @default(uuid()) @db.Uuid
+  householdId String       @db.Uuid
+  name        String
+  type        CategoryType @default(EXPENSE)
+  parentId    String?      @db.Uuid
+  icon        String?
+  colorHex    String?
+  isSystem    Boolean      @default(false)
+  
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  deletedAt   DateTime?
+
+  // Relations
+  household       Household        @relation(fields: [householdId], references: [id])
+  parent          Category?        @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children        Category[]       @relation("CategoryHierarchy")
+  transactions    Transaction[]
+  budgetLines     BudgetLine[]
+  plannedPayments PlannedPayment[]
+
+  @@unique([householdId, name, parentId])
+  @@map("categories")
+}
+
+// ==================== Transactions ====================
+
+enum TransactionDirection {
+  OUTFLOW
+  INFLOW
+  TRANSFER
+}
+
+model Transaction {
+  id            String               @id @default(uuid()) @db.Uuid
+  householdId   String               @db.Uuid
+  accountId     String               @db.Uuid
+  categoryId    String?              @db.Uuid
+  createdById   String               @db.Uuid
+  date          DateTime             @default(now())
+  description   String?
+  
+  amountOrig    Decimal              @db.Decimal(19, 4)
+  currencyOrig  String
+  fxRateToBase  Decimal              @default(1) @db.Decimal(19, 6)
+  amountBase    Decimal              @db.Decimal(19, 4)
+  
+  direction     TransactionDirection @default(OUTFLOW)
+  isPending     Boolean              @default(false)
+  tags          String[]             @default([])
+  
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  deletedAt     DateTime?
+
+  // Relations
+  household   Household    @relation(fields: [householdId], references: [id])
+  account     Account      @relation(fields: [accountId], references: [id])
+  category    Category?    @relation(fields: [categoryId], references: [id])
+  createdBy   User         @relation(fields: [createdById], references: [id])
+  attachments Attachment[]
+
+  @@map("transactions")
+}
+
+model Attachment {
+  id            String   @id @default(uuid()) @db.Uuid
+  transactionId String   @db.Uuid
+  url           String
+  mimeType      String
+  sizeBytes     Int
+  
+  createdAt     DateTime @default(now())
+
+  // Relations
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@map("attachments")
+}
+
+// ==================== Budgets ====================
+
+enum BudgetPeriod {
+  MONTHLY
+  WEEKLY
+  YEARLY
+  CUSTOM
+}
+
+model Budget {
+  id          String       @id @default(uuid()) @db.Uuid
+  householdId String       @db.Uuid
+  name        String
+  period      BudgetPeriod @default(MONTHLY)
+  startDate   DateTime
+  endDate     DateTime?
+  
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  deletedAt   DateTime?
+
+  // Relations
+  household Household    @relation(fields: [householdId], references: [id])
+  lines     BudgetLine[]
+
+  @@map("budgets")
+}
+
+model BudgetLine {
+  id         String  @id @default(uuid()) @db.Uuid
+  budgetId   String  @db.Uuid
+  categoryId String  @db.Uuid
+  limitBase  Decimal @db.Decimal(19, 4)
+
+  // Relations
+  budget   Budget   @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id])
+
+  @@unique([budgetId, categoryId])
+  @@map("budget_lines")
+}
+
+// ==================== Recurring Rules ====================
+
+model RecurringRule {
+  id                    String    @id @default(uuid()) @db.Uuid
+  householdId           String    @db.Uuid
+  templateTransactionId String?   @db.Uuid // Optional link to skeleton transaction
+  rrule                 String    // iCal RRULE string
+  startDate             DateTime
+  endDate               DateTime?
+  enabled               Boolean   @default(true)
+  
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  // Relations
+  household       Household        @relation(fields: [householdId], references: [id])
+  plannedPayments PlannedPayment[]
+
+  @@map("recurring_rules")
+}
+
+// ==================== Goals ====================
+
+model Goal {
+  id          String    @id @default(uuid()) @db.Uuid
+  householdId String    @db.Uuid
+  name        String
+  targetBase  Decimal   @db.Decimal(19, 4)
+  currentBase Decimal   @default(0) @db.Decimal(19, 4)
+  deadline    DateTime?
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  // Relations
+  household Household @relation(fields: [householdId], references: [id])
+
+  @@map("goals")
+}
+
+// ==================== Planned Payments ====================
+
+enum PlannedPaymentStatus {
+  PLANNED
+  SCHEDULED
+  PAID
+  CANCELLED
+}
+
+model PlannedPayment {
+  id              String               @id @default(uuid()) @db.Uuid
+  householdId     String               @db.Uuid
+  accountId       String?              @db.Uuid
+  categoryId      String?              @db.Uuid
+  recurringRuleId String?              @db.Uuid
+  name            String
+  dueDate         DateTime
+  
+  amountOrig      Decimal              @db.Decimal(19, 4)
+  currencyOrig    String
+  fxRateToBase    Decimal              @default(1) @db.Decimal(19, 6)
+  amountBase      Decimal              @db.Decimal(19, 4)
+  
+  status          PlannedPaymentStatus @default(PLANNED)
+  
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  deletedAt       DateTime?
+
+  // Relations
+  household     Household      @relation(fields: [householdId], references: [id])
+  account       Account?       @relation(fields: [accountId], references: [id])
+  category      Category?      @relation(fields: [categoryId], references: [id])
+  recurringRule RecurringRule? @relation(fields: [recurringRuleId], references: [id])
+
+  @@map("planned_payments")
+}
+
+// ==================== AI Insights ====================
+
+enum InsightKind {
+  BUDGET_ADVICE
+  ANOMALY
+  SAVINGS_TIP
+  TREND
+}
+
+model Insight {
+  id          String      @id @default(uuid()) @db.Uuid
+  householdId String      @db.Uuid
+  title       String
+  body        String      @db.Text
+  kind        InsightKind
+  score       Decimal     @db.Decimal(3, 2) // confidence 0-1
+  month       DateTime    // YYYY-MM (first day of month)
+  
+  createdAt   DateTime    @default(now())
+
+  // Relations
+  household Household @relation(fields: [householdId], references: [id])
+
+  @@map("insights")
+}
+
+// ==================== Audit Log ====================
+
+enum AuditEntity {
+  USER
+  HOUSEHOLD
+  ACCOUNT
+  CATEGORY
+  TRANSACTION
+  BUDGET
+  GOAL
+  PLANNED_PAYMENT
+  INSIGHT
+  INVITATION
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  IMPORT
+  EXPORT
+  AI_SUGGESTION
+}
+
+model AuditLog {
+  id          String      @id @default(uuid()) @db.Uuid
+  householdId String      @db.Uuid
+  actorId     String?     @db.Uuid
+  entity      AuditEntity
+  entityId    String      @db.Uuid
+  action      AuditAction
+  diffJson    Json?
+  
+  createdAt   DateTime    @default(now())
+
+  // Relations
+  household Household @relation(fields: [householdId], references: [id])
+  actor     User?     @relation(fields: [actorId], references: [id])
+
+  @@map("audit_logs")
+}
