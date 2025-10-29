@@ -1,12 +1,14 @@
-import 'express';
+import { Request as ExpressRequest } from 'express';
 
-declare module 'express-serve-static-core' {
-  interface Request {
-    rateLimit?: {
-      limit: number;
-      current: number;
-      remaining: number;
-      resetTime: Date;
-    };
+declare global {
+  namespace Express {
+    interface Request {
+      rateLimit?: {
+        limit: number;
+        current: number;
+        remaining: number;
+        resetTime: Date;
+      };
+    }
   }
 }
