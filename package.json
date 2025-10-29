@@ -39,6 +39,7 @@
     "@types/debug": "^4.1.12",
     "@types/express": "^5.0.5",
     "@types/hpp": "^0.2.7",
+    "@types/http-errors": "^2.0.5",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/morgan": "^1.9.10",
     "@types/node": "^24.9.2",

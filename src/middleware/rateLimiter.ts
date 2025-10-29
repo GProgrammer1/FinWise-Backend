@@ -1,18 +1,6 @@
 import rateLimit, { RateLimitRequestHandler } from 'express-rate-limit';
 import { Request, Response } from 'express';
 
-// Extend Express Request to include rateLimit property
-declare module 'express-serve-static-core' {
-  interface Request {
-    rateLimit?: {
-      limit: number;
-      current: number;
-      remaining: number;
-      resetTime: Date;
-    };
-  }
-}
-
 /**
  * Global rate limiter configuration
  * Limits requests per IP address to prevent abuse
