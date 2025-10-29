@@ -11,6 +11,7 @@ import { globalRateLimiter } from './middleware/rateLimiter';
 // Routes
 import indexRouter from './routes/index';
 import usersRouter from './routes/users';
+import authRouter from './routes/auth';
 
 // Load environment variables
 dotenv.config();
@@ -33,8 +34,12 @@ app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 // Static files
 app.use(express.static(path.join(__dirname, '../public')));
 
+// Serve uploads directory
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
 // Routes
 app.use('/', indexRouter);
+app.use('/auth', authRouter);
 app.use('/users', usersRouter);
 
 // Catch 404 and forward to error handler

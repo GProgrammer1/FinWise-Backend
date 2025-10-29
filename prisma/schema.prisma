@@ -12,24 +12,114 @@ datasource db {
 
 // ==================== User Management ====================
 
+enum UserRole {
+  PARENT
+  CHILD
+}
+
 model User {
   id           String    @id @default(uuid()) @db.Uuid
   email        String    @unique
   name         String
-  passwordHash String
+  passwordHash String?   // Nullable for OAuth-only users
   avatarUrl    String?
+  role         UserRole  @default(PARENT)
   
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   deletedAt    DateTime?
 
   // Relations
-  householdsOwned    Household[]
-  householdMembers   HouseholdMember[]
-  transactionsCreated Transaction[]
-  auditLogs          AuditLog[]
+  householdsOwned      Household[]
+  householdMembers     HouseholdMember[]
+  transactionsCreated  Transaction[]
+  auditLogs            AuditLog[]
+  oauthAccounts        OAuthAccount[]
+  refreshTokens        RefreshToken[]
+  verificationRequests VerificationRequest[]
+  parentProfile        ParentProfile?
 
   @@map("users")
+}
+
+enum OAuthProvider {
+  GOOGLE
+  APPLE
+}
+
+model OAuthAccount {
+  id         String        @id @default(uuid()) @db.Uuid
+  provider   OAuthProvider
+  providerId String        // Provider's user ID
+  userId     String        @db.Uuid
+  
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerId])
+  @@map("oauth_accounts")
+}
+
+model RefreshToken {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @db.Uuid
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  
+  createdAt  DateTime  @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model VerificationRequest {
+  id         String             @id @default(uuid()) @db.Uuid
+  userId     String             @db.Uuid
+  role       UserRole
+  status     VerificationStatus @default(PENDING)
+  idImageUrl String?            // URL to uploaded ID image (for PARENT)
+  reason     String?            // Rejection reason or notes
+  meta       Json?              // Additional metadata
+  
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("verification_requests")
+}
+
+model ParentProfile {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @unique @db.Uuid
+  country           String   // ISO-2 country code
+  numberOfChildren  Int
+  monthlyIncomeBase Decimal  @db.Decimal(19, 4)
+  monthlyRentBase   Decimal? @db.Decimal(19, 4)
+  monthlyLoansBase  Decimal? @db.Decimal(19, 4)
+  otherNotes        String?  @db.Text
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("parent_profiles")
 }
 
 model Household {
