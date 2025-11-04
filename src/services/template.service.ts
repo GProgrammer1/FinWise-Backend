@@ -103,6 +103,7 @@ export class TemplateService {
       'verification-received.html',
       'verification-approved.html',
       'verification-rejected.html',
+      'password-reset.html',
     ];
 
     await Promise.all(

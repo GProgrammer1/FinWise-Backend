@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "../FinWise"
+		},
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"java.compile.nullAnalysis.mode": "disabled"
+	}
+}

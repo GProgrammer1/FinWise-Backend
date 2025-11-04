@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "start": "node dist/server.js",
-    "dev": "nodemon --watch src --exec ts-node src/server.ts",
+    "dev": "node scripts/dev-with-maildev.js",
+    "dev:no-maildev": "nodemon --watch src --exec ts-node --project tsconfig.dev.json src/server.ts",
     "build": "tsc",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -15,13 +16,17 @@
     "prisma:push": "prisma db push",
     "postinstall": "prisma generate",
     "lint": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "maildev": "npx maildev",
+    "maildev:docker": "docker run -d -p 1025:1025 -p 1080:1080 --name maildev maildev/maildev"
   },
   "engines": {
     "node": ">=18.0.0"
   },
   "dependencies": {
     "@prisma/client": "^6.18.0",
+    "apple-signin-auth": "^2.0.0",
+    "argon2": "^0.44.0",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "debug": "~2.6.9",
@@ -29,12 +34,20 @@
     "express": "^4.21.2",
     "express-rate-limit": "^8.2.0",
     "express-validator": "^7.3.0",
+    "google-auth-library": "^10.5.0",
     "helmet": "^8.1.0",
     "hpp": "^0.2.3",
     "http-errors": "~1.6.3",
     "jsonwebtoken": "^9.0.2",
     "morgan": "~1.9.1",
-    "prisma": "^6.18.0"
+    "multer": "^2.0.2",
+    "nodemailer": "^7.0.10",
+    "prisma": "^6.18.0",
+    "sharp": "^0.33.5",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "tesseract.js": "^5.0.4",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -50,6 +63,8 @@
     "@types/node": "^24.9.2",
     "@types/nodemailer": "^7.0.3",
     "@types/supertest": "^6.0.3",
+    "@types/swagger-jsdoc": "^6.0.4",
+    "@types/swagger-ui-express": "^4.1.8",
     "jest": "^30.2.0",
     "nodemon": "^3.1.10",
     "supertest": "^7.1.4",

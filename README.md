@@ -65,6 +65,41 @@ Run the development server with hot reload:
 npm run dev
 ```
 
+**Note:** The `dev` script automatically starts MailDev (Docker) if it's not already running. When you stop the dev server (Ctrl+C), MailDev will also be stopped.
+
+To run the dev server without MailDev:
+```bash
+npm run dev:no-maildev
+```
+
+#### Email Testing with MailDev
+
+In development mode, the app automatically uses **MailDev** for email testing. MailDev is a local SMTP server that catches all emails and displays them in a web UI without sending real emails.
+
+**MailDev is automatically started** when you run `npm run dev`. If you want to start it manually:
+
+**Option 1: Using npm script**
+```bash
+npm run maildev
+```
+
+**Option 2: Using Docker Compose**
+```bash
+docker-compose -f docker-compose.maildev.yml up -d
+```
+
+**Access MailDev Web UI:**
+- Open http://localhost:1080 in your browser
+- All emails sent by the app will appear here
+- Click on any email to view its content, HTML, and attachments
+
+**MailDev Configuration:**
+- **SMTP Port**: `1025` (default)
+- **Web UI Port**: `1080` (default)
+- **No authentication required** in development
+
+**Note:** In production (`NODE_ENV=production`), the mailer service uses your configured SMTP settings (Gmail, SendGrid, etc.).
+
 ### Production
 
 Build the project:
@@ -139,6 +174,8 @@ GET /health - Health check endpoint
 - `npm run prisma:migrate` - Run database migrations
 - `npm run prisma:studio` - Open Prisma Studio
 - `npm run lint` - Type check without emitting files
+- `npm run maildev` - Start MailDev email testing server (development)
+- `npm run maildev:docker` - Start MailDev using Docker
 
 ## Environment Variables
 

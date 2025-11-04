@@ -1,7 +1,8 @@
 import { Response } from 'express';
 
 export interface ApiResponse<T = any> {
-  ok: boolean;
+  success: boolean;
+  message?: string;
   data?: T;
   error?: {
     code: string;
@@ -12,7 +13,7 @@ export interface ApiResponse<T = any> {
 
 export function successResponse<T>(res: Response, data: T, status = 200): Response {
   return res.status(status).json({
-    ok: true,
+    success: true,
     data,
   } as ApiResponse<T>);
 }
@@ -25,7 +26,8 @@ export function errorResponse(
   details?: any
 ): Response {
   return res.status(status).json({
-    ok: false,
+    success: false,
+    message,
     error: {
       code,
       message,

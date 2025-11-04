@@ -3,10 +3,14 @@ import createError from 'http-errors';
 import path from 'path';
 import logger from 'morgan';
 import dotenv from 'dotenv';
+import swaggerUi from 'swagger-ui-express';
 
 // Middleware
 import { setupSecurity } from './middleware/security';
 import { globalRateLimiter } from './middleware/rateLimiter';
+
+// Swagger
+import { swaggerSpec } from './config/swagger';
 
 // Routes
 import indexRouter from './routes/index';
@@ -36,6 +40,12 @@ app.use(express.static(path.join(__dirname, '../public')));
 
 // Serve uploads directory
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
+// Swagger documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'FinWise API Documentation',
+}));
 
 // Routes
 app.use('/', indexRouter);

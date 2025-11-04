@@ -12,6 +12,12 @@ export interface RefreshTokenPayload {
   tokenId: string;
 }
 
+export interface PasswordResetTokenPayload {
+  userId: string;
+  email: string;
+  type: 'password-reset';
+}
+
 export class JwtService {
   private accessSecret: string;
   private refreshSecret: string;
@@ -80,6 +86,27 @@ export class JwtService {
   getRefreshTokenExpiration(): Date {
     const ms = this.parseTtl(this.refreshTtl);
     return new Date(Date.now() + ms);
+  }
+
+  /**
+   * Generate password reset token (short-lived, 1 hour)
+   */
+  generatePasswordResetToken(payload: PasswordResetTokenPayload): string {
+    return jwt.sign(payload as any, this.accessSecret, {
+      expiresIn: '1h',
+      issuer: 'finwise-api',
+      audience: 'finwise-app',
+    } as jwt.SignOptions);
+  }
+
+  /**
+   * Verify password reset token
+   */
+  verifyPasswordResetToken(token: string): PasswordResetTokenPayload {
+    return jwt.verify(token, this.accessSecret, {
+      issuer: 'finwise-api',
+      audience: 'finwise-app',
+    }) as PasswordResetTokenPayload;
   }
 
   private parseTtl(ttl: string): number {

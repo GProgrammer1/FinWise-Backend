@@ -3,19 +3,6 @@ import { jwtService } from '../services/auth/jwt.service';
 import { errors } from '../utils/response';
 import prisma from '../config/database';
 
-// Extend Express Request to include user
-declare global {
-  namespace Express {
-    interface Request {
-      user?: {
-        id: string;
-        email: string;
-        role: string;
-      };
-    }
-  }
-}
-
 /**
  * Middleware to require authentication
  */

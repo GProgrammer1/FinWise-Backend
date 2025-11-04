@@ -1,16 +1,25 @@
-import multer from 'multer';
+import multer from "multer";
+import { RequestHandler } from "express";
 
 // Store files in memory for processing
 const storage = multer.memoryStorage();
 
 // File filter for images
-const imageFileFilter = (_req: Express.Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-  
+const imageFileFilter = (
+  _req: Express.Request,
+  file: Express.Multer.File,
+  cb: multer.FileFilterCallback
+) => {
+  const allowedMimes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+
   if (allowedMimes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file type. Only JPEG, PNG, and WebP images are allowed.'));
+    cb(
+      new Error(
+        "Invalid file type. Only JPEG, PNG, and WebP images are allowed."
+      )
+    );
   }
 };
 
@@ -24,4 +33,5 @@ export const upload = multer({
 });
 
 // Single file upload middleware
-export const uploadSingle = (fieldName: string) => upload.single(fieldName);
+export const uploadSingle = (fieldName: string): RequestHandler =>
+  upload.single(fieldName);

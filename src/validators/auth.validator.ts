@@ -53,8 +53,48 @@ export const refreshSchema = z.object({
 
 export type RefreshInput = z.infer<typeof refreshSchema>;
 
+// Forgot password validation
+export const forgotPasswordSchema = z.object({
+  email: emailSchema,
+});
+
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+
+// Reset password validation
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1),
+  password: passwordSchema,
+});
+
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+
+// Change password validation
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: passwordSchema,
+});
+
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
+// Verify email validation
+export const verifyEmailSchema = z.object({
+  token: z.string().min(1),
+});
+
+export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
+
+// Resend verification validation
+export const resendVerificationSchema = z.object({
+  email: emailSchema,
+});
+
+export type ResendVerificationInput = z.infer<typeof resendVerificationSchema>;
+
 // Helper to validate request body
-export function validate<T>(schema: z.ZodSchema<T>, data: unknown): T {
+export function validate<TSchema extends z.ZodTypeAny>(
+  schema: TSchema,
+  data: unknown
+): z.infer<TSchema> {
   try {
     return schema.parse(data);
   } catch (error) {

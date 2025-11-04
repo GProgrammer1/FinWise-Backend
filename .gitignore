@@ -18,7 +18,7 @@ uploads/
 .env
 .env.local
 .env.*.local
-
+.env.examplenp
 # IDE
 .vscode/
 .idea/
